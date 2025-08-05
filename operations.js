@@ -86,6 +86,9 @@ function simplifyExWithNeg(inputtedEquation, operators) {
   // dealing with negative exponenets
   if (exponent) {
     const regexExpNextToOp = /\d+\^-\d+/g;
+    const regexNegFirst = /\-\d+\^\d+/g;
+    const regexBothNeg = /\-\d+\^-\d+/g;
+
     if (regexExpNextToOp.test(inputtedEquation)) {
       const specificExponentExpression =
         inputtedEquation.match(regexExpNextToOp)[0];
@@ -94,7 +97,46 @@ function simplifyExWithNeg(inputtedEquation, operators) {
         specificExponentExpression,
         result
       );
-
+      if (
+        replacement.includes("*") ||
+        replacement.includes("/") ||
+        replacement.includes("^")
+      ) {
+        simplify(replacement);
+      } else {
+        const updatedOperator = operators.filter((op) => {
+          return op !== exponent;
+        });
+        simplifyAddOrSub(replacement, updatedOperator);
+      }
+    } else if (regexNegFirst.test(inputtedEquation)) {
+      const specificExponentExpression =
+        inputtedEquation.match(regexNegFirst)[0];
+      const result = multiplyOrDivideExpressions(specificExponentExpression);
+      const replacement = inputtedEquation.replace(
+        specificExponentExpression,
+        result
+      );
+      if (
+        replacement.includes("*") ||
+        replacement.includes("/") ||
+        replacement.includes("^")
+      ) {
+        simplify(replacement);
+      } else {
+        const updatedOperator = operators.filter((op) => {
+          return op !== exponent;
+        });
+        simplifyAddOrSub(replacement, updatedOperator);
+      }
+    } else if (regexBothNeg.test(inputtedEquation)) {
+      const specificExponentExpression =
+        inputtedEquation.match(regexBothNeg)[0];
+      const result = multiplyOrDivideExpressions(specificExponentExpression);
+      const replacement = inputtedEquation.replace(
+        specificExponentExpression,
+        result
+      );
       if (
         replacement.includes("*") ||
         replacement.includes("/") ||
@@ -192,11 +234,50 @@ function simplifyAddOrSub(inputtedEquation, operators) {
     return;
   } else {
     const regex = new RegExp(`\\d+[${additionOrSubtraction}]\\d+`, "g");
+    const firstNegRegex = new RegExp(
+      `\\-\\d+[${additionOrSubtraction}]\\d+`,
+      "g"
+    );
+    const lastNegRegex = new RegExp(
+      `\\d+[${additionOrSubtraction}]\\-\\d+`,
+      "g"
+    );
+    const bothNegRegex = new RegExp(
+      `\\-\\d+[${additionOrSubtraction}]\\-\\d+`,
+      "g"
+    );
+
     if (regex.test(inputtedEquation)) {
       const expression = inputtedEquation.match(regex)[0];
       const result = addOrDivideExpressions(expression);
       const replace = inputtedEquation.replace(expression, result);
-
+      if (!Number(replace)) {
+        simplify(replace);
+      } else {
+        answer = replace;
+      }
+    } else if (firstNegRegex.test(inputtedEquation)) {
+      const expression = inputtedEquation.match(firstNegRegex)[0];
+      const result = addOrDivideExpressions(expression);
+      const replace = inputtedEquation.replace(expression, result);
+      if (!Number(replace)) {
+        simplify(replace);
+      } else {
+        answer = replace;
+      }
+    } else if (lastNegRegex.test(inputtedEquation)) {
+      const expression = inputtedEquation.match(lastNegRegex)[0];
+      const result = addOrDivideExpressions(expression);
+      const replace = inputtedEquation.replace(expression, result);
+      if (!Number(replace)) {
+        simplify(replace);
+      } else {
+        answer = replace;
+      }
+    } else if (bothNegRegex.test(inputtedEquation)) {
+      const expression = inputtedEquation.match(bothNegRegex)[0];
+      const result = addOrDivideExpressions(expression);
+      const replace = inputtedEquation.replace(expression, result);
       if (!Number(replace)) {
         simplify(replace);
       } else {
