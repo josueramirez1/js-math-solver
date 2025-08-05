@@ -1,3 +1,9 @@
+import {
+  calculateAddOrSub,
+  calculateMultiplyOrDivide,
+  removeParenthesis,
+} from "./helpers.js";
+
 export let answer;
 
 export function simplify(inputtedEquation) {
@@ -5,6 +11,7 @@ export function simplify(inputtedEquation) {
     answer = inputtedEquation;
     return;
   }
+
   const regexOp = new RegExp(/[*/+-]/, "g");
   const operators = inputtedEquation.match(regexOp);
 
@@ -20,55 +27,40 @@ export function simplify(inputtedEquation) {
 }
 
 function simplifyParenthesis(inputtedEquation, operators) {
-  if (operators == null) {
-    return;
-  }
-
   let parenthesisExpression = "";
 
   for (let i = 0; i < operators.length; i++) {
     if (operators[i]) {
-      const regex = new RegExp(`\\(\\d*[${operators[i]}]\\d*\\)`, "g");
-      parenthesisExpression = inputtedEquation.match(regex);
-      if (parenthesisExpression == null) {
+      const regularReg = new RegExp(`\\(\\d+[${operators[i]}]\\d+\\)`, "g");
+      const negFirstReg = new RegExp(`\\(\\-\\d+[${operators[i]}]\\d+\\)`, "g");
+      const lastNegReg = new RegExp(`\\(\\d+[${operators[i]}]\\-\\d+\\)`, "g");
+      const bothNegReg = new RegExp(
+        `\\(\\-\\d+[${operators[i]}]\\-\\d+\\)`,
+        "g"
+      );
+
+      if (parenthesisExpression == undefined) {
         continue;
-      } else {
-        parenthesisExpression = inputtedEquation.match(regex)[0];
+      } else if (regularReg.test(inputtedEquation)) {
+        parenthesisExpression = inputtedEquation.match(regularReg)[0];
+        break;
+      } else if (negFirstReg.test(inputtedEquation)) {
+        parenthesisExpression = inputtedEquation.match(negFirstReg)[0];
+        break;
+      } else if (lastNegReg.test(inputtedEquation)) {
+        parenthesisExpression = inputtedEquation.match(lastNegReg)[0];
+        break;
+      } else if (bothNegReg.test(inputtedEquation)) {
+        parenthesisExpression = inputtedEquation.match(bothNegReg)[0];
         break;
       }
     }
   }
 
-  if (parenthesisExpression == undefined) {
+  if (!parenthesisExpression) {
     simplifyExWithNeg(inputtedEquation, operators);
   } else {
-    let removedParenthesis = parenthesisExpression.slice(
-      1,
-      parenthesisExpression.length - 1
-    );
-    const resultMultDiv = multiplyOrDivideExpressions(removedParenthesis);
-    const resultAddSub = addOrDivideExpressions(removedParenthesis);
-    if (resultMultDiv !== undefined) {
-      const replace = inputtedEquation.replace(
-        parenthesisExpression,
-        resultMultDiv
-      );
-      if (!Number(replace)) {
-        simplify(replace);
-      } else {
-        answer = replace;
-      }
-    } else if (resultAddSub !== undefined) {
-      const replace = inputtedEquation.replace(
-        parenthesisExpression,
-        resultAddSub
-      );
-      if (!Number(replace)) {
-        simplify(replace);
-      } else {
-        answer = replace;
-      }
-    }
+    removeParenthesis(inputtedEquation, parenthesisExpression, answer);
   }
 }
 
@@ -92,7 +84,7 @@ function simplifyExWithNeg(inputtedEquation, operators) {
     if (regexExpNextToOp.test(inputtedEquation)) {
       const specificExponentExpression =
         inputtedEquation.match(regexExpNextToOp)[0];
-      const result = multiplyOrDivideExpressions(specificExponentExpression);
+      const result = calculateMultiplyOrDivide(specificExponentExpression);
       const replacement = inputtedEquation.replace(
         specificExponentExpression,
         result
@@ -112,7 +104,7 @@ function simplifyExWithNeg(inputtedEquation, operators) {
     } else if (regexNegFirst.test(inputtedEquation)) {
       const specificExponentExpression =
         inputtedEquation.match(regexNegFirst)[0];
-      const result = multiplyOrDivideExpressions(specificExponentExpression);
+      const result = calculateMultiplyOrDivide(specificExponentExpression);
       const replacement = inputtedEquation.replace(
         specificExponentExpression,
         result
@@ -132,7 +124,7 @@ function simplifyExWithNeg(inputtedEquation, operators) {
     } else if (regexBothNeg.test(inputtedEquation)) {
       const specificExponentExpression =
         inputtedEquation.match(regexBothNeg)[0];
-      const result = multiplyOrDivideExpressions(specificExponentExpression);
+      const result = calculateMultiplyOrDivide(specificExponentExpression);
       const replacement = inputtedEquation.replace(
         specificExponentExpression,
         result
@@ -158,7 +150,7 @@ function simplifyExWithNeg(inputtedEquation, operators) {
 function simplifyExponents(inputtedEquation, operators, exponent) {
   const regExponent = new RegExp(`\\d+\\${exponent}\\d+`, "g");
   const expression = inputtedEquation.match(regExponent)[0];
-  const result = multiplyOrDivideExpressions(expression);
+  const result = calculateMultiplyOrDivide(expression);
   const replacement = inputtedEquation.replace(expression, result);
 
   if (
@@ -189,7 +181,7 @@ function simplifyMultDiv(inputtedEquation, operators) {
     simplifyAddOrSub(inputtedEquation, operators);
   } else if (regexNeg.test(inputtedEquation)) {
     const expression = inputtedEquation.match(regexNeg)[0];
-    const result = multiplyOrDivideExpressions(expression);
+    const result = calculateMultiplyOrDivide(expression);
     const replacement = inputtedEquation.replace(expression, result);
     if (
       replacement.includes("*") ||
@@ -205,7 +197,7 @@ function simplifyMultDiv(inputtedEquation, operators) {
     }
   } else {
     const expression = inputtedEquation.match(regexPos)[0];
-    const result = multiplyOrDivideExpressions(expression);
+    const result = calculateMultiplyOrDivide(expression);
     const replacement = inputtedEquation.replace(expression, result);
     if (
       replacement.includes("*") ||
@@ -249,7 +241,7 @@ function simplifyAddOrSub(inputtedEquation, operators) {
 
     if (regex.test(inputtedEquation)) {
       const expression = inputtedEquation.match(regex)[0];
-      const result = addOrDivideExpressions(expression);
+      const result = calculateAddOrSub(expression);
       const replace = inputtedEquation.replace(expression, result);
       if (!Number(replace)) {
         simplify(replace);
@@ -258,7 +250,7 @@ function simplifyAddOrSub(inputtedEquation, operators) {
       }
     } else if (firstNegRegex.test(inputtedEquation)) {
       const expression = inputtedEquation.match(firstNegRegex)[0];
-      const result = addOrDivideExpressions(expression);
+      const result = calculateAddOrSub(expression);
       const replace = inputtedEquation.replace(expression, result);
       if (!Number(replace)) {
         simplify(replace);
@@ -267,7 +259,7 @@ function simplifyAddOrSub(inputtedEquation, operators) {
       }
     } else if (lastNegRegex.test(inputtedEquation)) {
       const expression = inputtedEquation.match(lastNegRegex)[0];
-      const result = addOrDivideExpressions(expression);
+      const result = calculateAddOrSub(expression);
       const replace = inputtedEquation.replace(expression, result);
       if (!Number(replace)) {
         simplify(replace);
@@ -276,7 +268,7 @@ function simplifyAddOrSub(inputtedEquation, operators) {
       }
     } else if (bothNegRegex.test(inputtedEquation)) {
       const expression = inputtedEquation.match(bothNegRegex)[0];
-      const result = addOrDivideExpressions(expression);
+      const result = calculateAddOrSub(expression);
       const replace = inputtedEquation.replace(expression, result);
       if (!Number(replace)) {
         simplify(replace);
@@ -286,39 +278,5 @@ function simplifyAddOrSub(inputtedEquation, operators) {
     } else {
       answer = inputtedEquation;
     }
-  }
-}
-
-function multiplyOrDivideExpressions(expression) {
-  if (expression.includes("^")) {
-    const split = expression.split("^");
-    const result = Number(split[0]) ** Number(split[1]);
-    return String(result);
-  }
-
-  if (expression.includes("*")) {
-    const split = expression.split("*");
-    const result = Number(split[0]) * Number(split[1]);
-    return String(result);
-  }
-
-  if (expression.includes("/")) {
-    const split = expression.split("/");
-    const result = Number(split[0]) / Number(split[1]);
-    return String(result);
-  }
-}
-
-function addOrDivideExpressions(expression) {
-  if (expression.includes("+")) {
-    const split = expression.split("+");
-    const result = Number(split[0]) + Number(split[1]);
-    return String(result);
-  }
-
-  if (expression.includes("-")) {
-    const split = expression.split("-");
-    const result = Number(split[0]) - Number(split[1]);
-    return String(result);
   }
 }
